@@ -43,6 +43,15 @@ Game::~Game()
 	// will clean up their own internal DirectX stuff
 	delete vertexShader;
 	delete pixelShader;
+
+	if (meshes != nullptr) {
+		for (int i = 0; i < meshCount; i++) {
+			if (meshes[i] != nullptr) {
+				delete meshes[i];
+			}
+		}
+		delete meshes;
+	}
 }
 
 // --------------------------------------------------------

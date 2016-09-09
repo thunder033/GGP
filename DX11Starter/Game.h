@@ -33,6 +33,7 @@ private:
 	void CreateBasicGeometry();
 
 	//Meshes
+	const int meshCount = 3;
 	Mesh** meshes;
 
 	// Wrappers for DirectX shaders to provide simplified functionality
