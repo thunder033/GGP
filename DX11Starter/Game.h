@@ -4,6 +4,7 @@
 #include "SimpleShader.h"
 #include <DirectXMath.h>
 #include "Mesh.h"
+#include "Entity.h"
 
 class Game 
 	: public DXCore
@@ -31,6 +32,8 @@ private:
 	void LoadShaders(); 
 	void CreateMatrices();
 	void CreateBasicGeometry();
+
+	std::vector<Entity*> entities;
 
 	//Meshes
 	const int meshCount = 3;

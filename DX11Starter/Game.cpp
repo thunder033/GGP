@@ -44,6 +44,11 @@ Game::~Game()
 	delete vertexShader;
 	delete pixelShader;
 
+	std::vector<Entity*>::iterator it;
+	for (it = entities.begin(); it < entities.end(); it++) {
+		delete *it;
+	}
+
 	if (meshes != nullptr) {
 		for (int i = 0; i < meshCount; i++) {
 			if (meshes[i] != nullptr) {
@@ -167,7 +172,7 @@ void Game::CreateBasicGeometry()
 		{ XMFLOAT3(-1.5f, -1.0f, +0.0f), green },
 	};
 
-	float pos = 1.5f;
+	float pos = 0;
 	Vertex squareVerts[] =
 	{
 		{ XMFLOAT3(pos +1.0f, pos +1.0f, +0.0f), blue }, //TR
@@ -176,7 +181,7 @@ void Game::CreateBasicGeometry()
 		{ XMFLOAT3(pos -1.0f, pos +1.0f, +0.0f), red } //TL
 	};
 
-	pos = -1.5f;
+	pos = 0;
 	Vertex hexagonVerts[] =
 	{
 		{ XMFLOAT3(pos + 0.0f, pos + 0.0f, +0.0f), red }, //Center
@@ -203,6 +208,14 @@ void Game::CreateBasicGeometry()
 		new Mesh(squareIndices, squareVerts, 6, 4, device),
 		new Mesh(hexagonIndices, hexagonVerts, 18, 7, device)
 	};
+
+	entities.push_back(new Entity(meshes[0]));
+	entities.push_back(new Entity(meshes[1]));
+	entities.push_back(new Entity(meshes[2]));
+	entities.push_back(new Entity(meshes[2]));
+	entities.push_back(new Entity(meshes[2]));
+
+	entities[0]->GetTransform()->SetPosition(1.5f, 0, 0);
 }
 
 
@@ -252,38 +265,40 @@ void Game::Draw(float deltaTime, float totalTime)
 		1.0f,
 		0);
 
-	// Send data to shader variables
-	//  - Do this ONCE PER OBJECT you're drawing
-	//  - This is actually a complex process of copying data to a local buffer
-	//    and then copying that entire buffer to the GPU.  
-	//  - The "SimpleShader" class handles all of that for you.
-	vertexShader->SetMatrix4x4("world", worldMatrix);
-	vertexShader->SetMatrix4x4("view", viewMatrix);
-	vertexShader->SetMatrix4x4("projection", projectionMatrix);
+	std::vector<Entity*>::iterator it;
+	for (it = entities.begin(); it < entities.end(); it++) {
 
-	// Once you've set all of the data you care to change for
-	// the next draw call, you need to actually send it to the GPU
-	//  - If you skip this, the "SetMatrix" calls above won't make it to the GPU!
-	vertexShader->CopyAllBufferData();
+		// Send data to shader variables
+		//  - Do this ONCE PER OBJECT you're drawing
+		//  - This is actually a complex process of copying data to a local buffer
+		//    and then copying that entire buffer to the GPU.  
+		//  - The "SimpleShader" class handles all of that for you.
+		vertexShader->SetMatrix4x4("world", (*it)->GetDrawMatrix());
+		vertexShader->SetMatrix4x4("view", viewMatrix);
+		vertexShader->SetMatrix4x4("projection", projectionMatrix);
 
-	// Set the vertex and pixel shaders to use for the next Draw() command
-	//  - These don't technically need to be set every frame...YET
-	//  - Once you start applying different shaders to different objects,
-	//    you'll need to swap the current shaders before each draw
-	vertexShader->SetShader();
-	pixelShader->SetShader();
+		// Once you've set all of the data you care to change for
+		// the next draw call, you need to actually send it to the GPU
+		//  - If you skip this, the "SetMatrix" calls above won't make it to the GPU!
+		vertexShader->CopyAllBufferData();
 
-	// Set buffers in the input assembler
-	//  - Do this ONCE PER OBJECT you're drawing, since each object might
-	//    have different geometry.
-	UINT stride = sizeof(Vertex);
-	UINT offset = 0;
+		// Set the vertex and pixel shaders to use for the next Draw() command
+		//  - These don't technically need to be set every frame...YET
+		//  - Once you start applying different shaders to different objects,
+		//    you'll need to swap the current shaders before each draw
+		vertexShader->SetShader();
+		pixelShader->SetShader();
 
-	for (int i = 0; i < 3; i++) {
+		// Set buffers in the input assembler
+		//  - Do this ONCE PER OBJECT you're drawing, since each object might
+		//    have different geometry.
+		UINT stride = sizeof(Vertex);
+		UINT offset = 0;
 
-		ID3D11Buffer* vertexBuffer = meshes[i]->GetVertexBuffer();
+		Mesh* mesh = (*it)->GetMesh();
+		ID3D11Buffer* vertexBuffer = mesh->GetVertexBuffer();
 		context->IASetVertexBuffers(0, 1, &vertexBuffer, &stride, &offset);
-		context->IASetIndexBuffer(meshes[i]->GetIndexBuffer(), DXGI_FORMAT_R32_UINT, 0);
+		context->IASetIndexBuffer(mesh->GetIndexBuffer(), DXGI_FORMAT_R32_UINT, 0);
 
 		// Finally do the actual drawing
 		//  - Do this ONCE PER OBJECT you intend to draw
@@ -291,7 +306,7 @@ void Game::Draw(float deltaTime, float totalTime)
 		//  - DrawIndexed() uses the currently set INDEX BUFFER to look up corresponding
 		//     vertices in the currently set VERTEX BUFFER
 		context->DrawIndexed(
-			meshes[i]->GetIndexCount(),     // The number of indices to use (we could draw a subset if we wanted)
+			mesh->GetIndexCount(),     // The number of indices to use (we could draw a subset if we wanted)
 			0,     // Offset to the first index we want to use
 			0);    // Offset to add to each index when looking up vertices
 
