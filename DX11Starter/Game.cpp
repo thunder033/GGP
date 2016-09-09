@@ -245,6 +245,16 @@ void Game::Update(float deltaTime, float totalTime)
 	// Quit if the escape key is pressed
 	if (GetAsyncKeyState(VK_ESCAPE))
 		Quit();
+
+	entities[0]->GetTransform()->SetPosition(sin(totalTime), 0, 0);
+	entities[0]->GetTransform()->SetScale(abs(sin(totalTime)), 1, 1);
+
+	entities[1]->GetTransform()->SetPosition(0, sin(totalTime), 0);
+	entities[1]->GetTransform()->SetRotation(0, 0, sin(totalTime) * 3.14);
+	entities[2]->GetTransform()->SetPosition(0, 0, sin(totalTime));
+
+	entities[3]->GetTransform()->SetPosition(cos(totalTime), sin(totalTime), 0);
+	entities[4]->GetTransform()->SetPosition(0, cos(totalTime), sin(totalTime));
 }
 
 // --------------------------------------------------------

@@ -76,9 +76,12 @@ DirectX::XMFLOAT4X4 Transform::GetMatrix()
 			DirectX::XMVECTOR(),			//Scaling Orientation Quaterion
 			DirectX::XMLoadFloat3(&scale),  //Scaling
 			DirectX::XMVECTOR(),			//Rotation Origin
-			DirectX::XMLoadFloat3(&rotation),//Rotation Quaternion
+			DirectX::XMQuaternionRotationRollPitchYaw(rotation.x, rotation.y, rotation.z),//Rotation Quaternion
 			DirectX::XMLoadFloat3(&position) //Translation
 		));
+
+		
+
 		return matrix;
 	}
 }
