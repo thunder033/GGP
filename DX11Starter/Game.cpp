@@ -23,6 +23,8 @@ Game::Game(HINSTANCE hInstance)
 	// Initialize fields
 	vertexShader = 0;
 	pixelShader = 0;
+	mouseDragging = false;
+	camera = new Camera((float)width / height);
 
 #if defined(DEBUG) || defined(_DEBUG)
 	// Do we want a console window?  Probably only in debug mode
@@ -43,6 +45,8 @@ Game::~Game()
 	// will clean up their own internal DirectX stuff
 	delete vertexShader;
 	delete pixelShader;
+	delete baseMaterial;
+	delete camera;
 
 	std::vector<Entity*>::iterator it;
 	for (it = entities.begin(); it < entities.end(); it++) {
@@ -69,7 +73,7 @@ void Game::Init()
 	// geometry to draw and some simple camera matrices.
 	//  - You'll be expanding and/or replacing these later
 	LoadShaders();
-	CreateMatrices();
+	camera->SetAspectRatio((float)width / height);
 	CreateBasicGeometry();
 
 	// Tell the input assembler stage of the pipeline what kind of
@@ -106,51 +110,6 @@ void Game::LoadShaders()
 	// scenarios work correctly, although others exist
 }
 
-
-
-// --------------------------------------------------------
-// Initializes the matrices necessary to represent our geometry's 
-// transformations and our 3D camera
-// --------------------------------------------------------
-void Game::CreateMatrices()
-{
-	// Set up world matrix
-	// - In an actual game, each object will need one of these and they should
-	//   update when/if the object moves (every frame)
-	// - You'll notice a "transpose" happening below, which is redundant for
-	//   an identity matrix.  This is just to show that HLSL expects a different
-	//   matrix (column major vs row major) than the DirectX Math library
-	XMMATRIX W = XMMatrixIdentity();
-	XMStoreFloat4x4(&worldMatrix, XMMatrixTranspose(W)); // Transpose for HLSL!
-
-	// Create the View matrix
-	// - In an actual game, recreate this matrix every time the camera 
-	//    moves (potentially every frame)
-	// - We're using the LOOK TO function, which takes the position of the
-	//    camera and the direction vector along which to look (as well as "up")
-	// - Another option is the LOOK AT function, to look towards a specific
-	//    point in 3D space
-	XMVECTOR pos = XMVectorSet(0, 0, -5, 0);
-	XMVECTOR dir = XMVectorSet(0, 0, 1, 0);
-	XMVECTOR up  = XMVectorSet(0, 1, 0, 0);
-	XMMATRIX V   = XMMatrixLookToLH(
-		pos,     // The position of the "camera"
-		dir,     // Direction the camera is looking
-		up);     // "Up" direction in 3D space (prevents roll)
-	XMStoreFloat4x4(&viewMatrix, XMMatrixTranspose(V)); // Transpose for HLSL!
-
-	// Create the Projection matrix
-	// - This should match the window's aspect ratio, and also update anytime
-	//   the window resizes (which is already happening in OnResize() below)
-	XMMATRIX P = XMMatrixPerspectiveFovLH(
-		0.25f * 3.1415926535f,		// Field of View Angle
-		(float)width / height,		// Aspect ratio
-		0.1f,						// Near clip plane distance
-		100.0f);					// Far clip plane distance
-	XMStoreFloat4x4(&projectionMatrix, XMMatrixTranspose(P)); // Transpose for HLSL!
-}
-
-
 // --------------------------------------------------------
 // Creates the geometry we're going to draw - a single triangle for now
 // --------------------------------------------------------
@@ -161,6 +120,7 @@ void Game::CreateBasicGeometry()
 	XMFLOAT4 red	= XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f);
 	XMFLOAT4 green	= XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f);
 	XMFLOAT4 blue	= XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f);
+	XMFLOAT4 yellow = XMFLOAT4(1.0f, 1.0f, 0.0f, 1.0f);
 
 	// Set up the vertices of the triangle we would like to draw
 	// - We're going to copy this array, exactly as it exists in memory
@@ -172,26 +132,29 @@ void Game::CreateBasicGeometry()
 		{ XMFLOAT3(-1.5f, -1.0f, +0.0f), green },
 	};
 
-	float pos = 0;
-	Vertex squareVerts[] =
+	Vertex cubeVerts[] =
 	{
-		{ XMFLOAT3(pos +1.0f, pos +1.0f, +0.0f), blue }, //TR
-		{ XMFLOAT3(pos +1.0f, pos -1.0f, +0.0f), blue }, //BR
-		{ XMFLOAT3(pos - 1.0f, pos - 1.0f, +0.0f), green }, //BL
-		{ XMFLOAT3(pos -1.0f, pos +1.0f, +0.0f), red } //TL
+		{ XMFLOAT3(+1.0f, +1.0f, -1.0f), yellow }, //FTR - 0
+		{ XMFLOAT3(+1.0f, -1.0f, -1.0f), blue }, //FBR - 1
+		{ XMFLOAT3(-1.0f, -1.0f, -1.0f), green }, //FBL - 2
+		{ XMFLOAT3(-1.0f, +1.0f, -1.0f), red }, //FTL - 3
+
+		{ XMFLOAT3(+1.0f, +1.0f, +1.0f), yellow }, //BTR - 4
+		{ XMFLOAT3(+1.0f, -1.0f, +1.0f), blue }, //BBR - 5
+		{ XMFLOAT3(-1.0f, -1.0f, +1.0f), green }, //BBL - 6
+		{ XMFLOAT3(-1.0f, +1.0f, +1.0f), red } //BTL - 7
 	};
 
-	pos = 0;
 	Vertex hexagonVerts[] =
 	{
-		{ XMFLOAT3(pos + 0.0f, pos + 0.0f, +0.0f), red }, //Center
+		{ XMFLOAT3(+ 0.0f, + 0.0f, +0.0f), red }, //Center
 
-		{ XMFLOAT3(pos - 0.4f, pos + 0.6f, +0.0f), blue }, //TL
-		{ XMFLOAT3(pos + 0.4f, pos + 0.6f, +0.0f), blue }, //TR
-		{ XMFLOAT3(pos + 0.75f, pos + 0.0f, +0.0f), blue }, //MR
-		{ XMFLOAT3(pos + 0.4f, pos - 0.6f, +0.0f), blue }, //BR
-		{ XMFLOAT3(pos - 0.4f, pos - 0.6f, +0.0f), blue }, //BL
-		{ XMFLOAT3(pos - 0.75f, pos + 0.0f, +0.0f), blue }, //ML
+		{ XMFLOAT3(- 0.4f, + 0.6f, +0.0f), blue }, //TL
+		{ XMFLOAT3(+ 0.4f, + 0.6f, +0.0f), blue }, //TR
+		{ XMFLOAT3(+ 0.75f, + 0.0f, +0.0f), blue }, //MR
+		{ XMFLOAT3(+ 0.4f, - 0.6f, +0.0f), blue }, //BR
+		{ XMFLOAT3(- 0.4f, - 0.6f, +0.0f), blue }, //BL
+		{ XMFLOAT3(- 0.75f, + 0.0f, +0.0f), blue }, //ML
 	};
 
 	// Set up the indices, which tell us which vertices to use and in which order
@@ -200,20 +163,28 @@ void Game::CreateBasicGeometry()
 	//    in the correct order and each one will be used exactly once
 	// - But just to see how it's done...
 	int triangleIndices[] = { 0, 1, 2 };
-	int squareIndices[] = { 2, 3, 0, 0, 1, 2 };
+	int cubeIndices[] = { 
+		0, 1, 2, 2, 3, 0, //Front
+		7, 6, 5, 5, 4, 7, //Back
+		5, 1, 0, 4, 5, 0, //Right
+		7, 3, 2, 6, 7, 2, //Left
+		4, 0, 3, 7, 4, 3, //Top
+		2, 1, 5, 2, 5, 6, //Bottom
+	};
 	int hexagonIndices[] = { 0, 1, 2, 0, 2, 3, 0, 3, 4, 0, 4, 5, 0, 5, 6, 0, 6, 1};
 
 	meshes = new Mesh*[3]{
 		new Mesh(triangleIndices, triangleVerts, 3, 3, device),
-		new Mesh(squareIndices, squareVerts, 6, 4, device),
+		new Mesh(cubeIndices, cubeVerts, 36, 8, device),
 		new Mesh(hexagonIndices, hexagonVerts, 18, 7, device)
 	};
 
-	entities.push_back(new Entity(meshes[0]));
-	entities.push_back(new Entity(meshes[1]));
-	entities.push_back(new Entity(meshes[2]));
-	entities.push_back(new Entity(meshes[2]));
-	entities.push_back(new Entity(meshes[2]));
+	Material* baseMaterial = new Material(vertexShader, pixelShader);
+	entities.push_back(new Entity(meshes[0], baseMaterial));
+	entities.push_back(new Entity(meshes[1], baseMaterial)); //cube
+	entities.push_back(new Entity(meshes[2], baseMaterial));
+	entities.push_back(new Entity(meshes[2], baseMaterial));
+	entities.push_back(new Entity(meshes[2], baseMaterial));
 
 	entities[0]->GetTransform()->SetPosition(1.5f, 0, 0);
 }
@@ -229,12 +200,7 @@ void Game::OnResize()
 	DXCore::OnResize();
 
 	// Update our projection matrix since the window size changed
-	XMMATRIX P = XMMatrixPerspectiveFovLH(
-		0.25f * 3.1415926535f,	// Field of View Angle
-		(float)width / height,	// Aspect ratio
-		0.1f,				  	// Near clip plane distance
-		100.0f);			  	// Far clip plane distance
-	XMStoreFloat4x4(&projectionMatrix, XMMatrixTranspose(P)); // Transpose for HLSL!
+	camera->SetAspectRatio((float)width / height);
 }
 
 // --------------------------------------------------------
@@ -246,11 +212,14 @@ void Game::Update(float deltaTime, float totalTime)
 	if (GetAsyncKeyState(VK_ESCAPE))
 		Quit();
 
+	camera->Update(deltaTime, totalTime);
+
 	entities[0]->GetTransform()->SetPosition(sin(totalTime), 0, 0);
 	entities[0]->GetTransform()->SetScale(abs(sin(totalTime)), 1, 1);
 
+	entities[1]->GetTransform()->SetPosition(0, 0, 0);
 	entities[1]->GetTransform()->SetPosition(0, sin(totalTime), 0);
-	entities[1]->GetTransform()->SetRotation(0, 0, sin(totalTime) * 3.14);
+	entities[1]->GetTransform()->SetRotation(sin(totalTime) * 3.14f, sin(totalTime) * 3.14f, sin(totalTime) * 3.14f);
 	entities[2]->GetTransform()->SetPosition(0, 0, sin(totalTime));
 
 	entities[3]->GetTransform()->SetPosition(cos(totalTime), sin(totalTime), 0);
@@ -278,26 +247,7 @@ void Game::Draw(float deltaTime, float totalTime)
 	std::vector<Entity*>::iterator it;
 	for (it = entities.begin(); it < entities.end(); it++) {
 
-		// Send data to shader variables
-		//  - Do this ONCE PER OBJECT you're drawing
-		//  - This is actually a complex process of copying data to a local buffer
-		//    and then copying that entire buffer to the GPU.  
-		//  - The "SimpleShader" class handles all of that for you.
-		vertexShader->SetMatrix4x4("world", (*it)->GetDrawMatrix());
-		vertexShader->SetMatrix4x4("view", viewMatrix);
-		vertexShader->SetMatrix4x4("projection", projectionMatrix);
-
-		// Once you've set all of the data you care to change for
-		// the next draw call, you need to actually send it to the GPU
-		//  - If you skip this, the "SetMatrix" calls above won't make it to the GPU!
-		vertexShader->CopyAllBufferData();
-
-		// Set the vertex and pixel shaders to use for the next Draw() command
-		//  - These don't technically need to be set every frame...YET
-		//  - Once you start applying different shaders to different objects,
-		//    you'll need to swap the current shaders before each draw
-		vertexShader->SetShader();
-		pixelShader->SetShader();
+		(*it)->PrepareMaterial(camera->getViewMatrix(), camera->getProjectionMatrix());
 
 		// Set buffers in the input assembler
 		//  - Do this ONCE PER OBJECT you're drawing, since each object might
@@ -339,6 +289,9 @@ void Game::Draw(float deltaTime, float totalTime)
 void Game::OnMouseDown(WPARAM buttonState, int x, int y)
 {
 	// Add any custom code here...
+	if (buttonState & 0x0001) {
+		mouseDragging = true;
+	}
 
 	// Save the previous mouse position, so we have it for the future
 	prevMousePos.x = x;
@@ -356,6 +309,9 @@ void Game::OnMouseDown(WPARAM buttonState, int x, int y)
 void Game::OnMouseUp(WPARAM buttonState, int x, int y)
 {
 	// Add any custom code here...
+	if (!buttonState & 0x0001) {
+		mouseDragging = false;
+	}
 
 	// We don't care about the tracking the cursor outside
 	// the window anymore (we're not dragging if the mouse is up)
@@ -370,6 +326,10 @@ void Game::OnMouseUp(WPARAM buttonState, int x, int y)
 void Game::OnMouseMove(WPARAM buttonState, int x, int y)
 {
 	// Add any custom code here...
+	if (mouseDragging) {
+		float rotateSpeed = 0.005f;
+		camera->Rotate((y - prevMousePos.y) * rotateSpeed, (x - prevMousePos.x) * rotateSpeed);
+	}
 
 	// Save the previous mouse position, so we have it for the future
 	prevMousePos.x = x;

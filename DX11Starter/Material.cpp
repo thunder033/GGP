@@ -2,8 +2,10 @@
 
 
 
-Material::Material()
+Material::Material(SimpleVertexShader* vertexShader, SimplePixelShader* pixelShader)
 {
+	this->vertexShader = vertexShader;
+	this->pixelShader = pixelShader;
 }
 
 

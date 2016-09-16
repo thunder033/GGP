@@ -9,8 +9,17 @@ class Material
 	// Wrappers for DirectX shaders to provide simplified functionality
 	SimpleVertexShader* vertexShader;
 	SimplePixelShader* pixelShader;
+
 public:
-	Material();
-	~Material();
+	Material(SimpleVertexShader* vertexShader, SimplePixelShader* pixelShader);
+	virtual ~Material();
+
+	SimpleVertexShader* GetVertexShader() {
+		return vertexShader;
+	};
+
+	SimplePixelShader* GetPixelShader() {
+		return pixelShader;
+	}
 };
 
