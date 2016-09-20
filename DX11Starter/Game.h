@@ -39,6 +39,10 @@ private:
 	const int meshCount = 3;
 	Mesh** meshes;
 
+	//Textures
+	ID3D11ShaderResourceView* textureSrv;
+	ID3D11SamplerState* sampler;
+
 	// Wrappers for DirectX shaders to provide simplified functionality
 	SimpleVertexShader* vertexShader;
 	SimplePixelShader* pixelShader;

@@ -1,4 +1,8 @@
 
+
+Texture2D Texture : register(t0);
+SamplerState Sampler : register(s0);
+
 // Struct representing the data we expect to receive from earlier pipeline stages
 // - Should match the output of our corresponding vertex shader
 // - The name of the struct itself is unimportant
@@ -13,6 +17,7 @@ struct VertexToPixel
 	//  v    v                v
 	float4 position		: SV_POSITION;
 	float4 color		: COLOR;
+	float2 uv			: TEXCOORD;
 };
 
 // --------------------------------------------------------
@@ -26,9 +31,15 @@ struct VertexToPixel
 // --------------------------------------------------------
 float4 main(VertexToPixel input) : SV_TARGET
 {
+	//Test UV
+	//return float(input.uv, 0, 1);
+
+	//Sample the texure
+	float4 textureColor = Texture.Sample(Sampler, input.uv);
+
 	// Just return the input color
 	// - This color (like most values passing through the rasterizer) is 
 	//   interpolated for each pixel between the corresponding vertices 
 	//   of the triangle we're rendering
-	return input.color;
+	return input.color * textureColor;
 }

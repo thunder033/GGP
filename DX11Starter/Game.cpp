@@ -1,5 +1,6 @@
 #include "Game.h"
 #include "Vertex.h"
+#include "WICTextureLoader.h"
 
 // For the DirectX Math library
 using namespace DirectX;
@@ -48,6 +49,9 @@ Game::~Game()
 	delete baseMaterial;
 	delete camera;
 
+	sampler->Release();
+	textureSrv->Release();
+
 	std::vector<Entity*>::iterator it;
 	for (it = entities.begin(); it < entities.end(); it++) {
 		delete *it;
@@ -75,6 +79,25 @@ void Game::Init()
 	LoadShaders();
 	camera->SetAspectRatio((float)width / height);
 	CreateBasicGeometry();
+
+	//Texturing
+	CreateWICTextureFromFile(
+		device, 
+		context, //Providing the context will auto-generate mipmaps
+		L"Debug/Textures/crate.jpeg", 
+		0, //we don't actually need the texture reference
+		&textureSrv);
+
+	//Create a sampler state for texture sampling
+	D3D11_SAMPLER_DESC samplerDesc = {};
+	samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+	samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+	samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+	samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+	samplerDesc.MaxAnisotropy = 16;
+	samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
+
+	device->CreateSamplerState(&samplerDesc, &sampler);
 
 	// Tell the input assembler stage of the pipeline what kind of
 	// geometric primitives (points, lines or triangles) we want to draw.  
@@ -247,7 +270,7 @@ void Game::Draw(float deltaTime, float totalTime)
 	std::vector<Entity*>::iterator it;
 	for (it = entities.begin(); it < entities.end(); it++) {
 
-		(*it)->PrepareMaterial(camera->getViewMatrix(), camera->getProjectionMatrix());
+		(*it)->PrepareMaterial(camera->getViewMatrix(), camera->getProjectionMatrix(), textureSrv, sampler);
 
 		// Set buffers in the input assembler
 		//  - Do this ONCE PER OBJECT you're drawing, since each object might
