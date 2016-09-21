@@ -32,7 +32,7 @@ struct VertexToPixel
 float4 main(VertexToPixel input) : SV_TARGET
 {
 	//Test UV
-	//return float(input.uv, 0, 1);
+	//return float4(input.uv, 0, 1);
 
 	//Sample the texure
 	float4 textureColor = Texture.Sample(Sampler, input.uv);

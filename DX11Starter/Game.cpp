@@ -84,7 +84,7 @@ void Game::Init()
 	CreateWICTextureFromFile(
 		device, 
 		context, //Providing the context will auto-generate mipmaps
-		L"Debug/Textures/crate.jpeg", 
+		L"Debug/Textures/crate.png", 
 		0, //we don't actually need the texture reference
 		&textureSrv);
 
@@ -150,34 +150,34 @@ void Game::CreateBasicGeometry()
 	//    over to a DirectX-controlled data structure (the vertex buffer)
 	Vertex triangleVerts[] = 
 	{
-		{ XMFLOAT3(+0.0f, +1.0f, +0.0f), red },
-		{ XMFLOAT3(+1.5f, -1.0f, +0.0f), blue },
-		{ XMFLOAT3(-1.5f, -1.0f, +0.0f), green },
+		{ XMFLOAT3(+0.0f, +1.0f, +0.0f), red, XMFLOAT2(0, 0) },
+		{ XMFLOAT3(+1.5f, -1.0f, +0.0f), blue, XMFLOAT2(1, 1) },
+		{ XMFLOAT3(-1.5f, -1.0f, +0.0f), green, XMFLOAT2(0, 1) },
 	};
 
 	Vertex cubeVerts[] =
 	{
-		{ XMFLOAT3(+1.0f, +1.0f, -1.0f), yellow }, //FTR - 0
-		{ XMFLOAT3(+1.0f, -1.0f, -1.0f), blue }, //FBR - 1
-		{ XMFLOAT3(-1.0f, -1.0f, -1.0f), green }, //FBL - 2
-		{ XMFLOAT3(-1.0f, +1.0f, -1.0f), red }, //FTL - 3
+		{ XMFLOAT3(+1.0f, +1.0f, -1.0f), yellow, XMFLOAT2(1, 0) }, //FTR - 0
+		{ XMFLOAT3(+1.0f, -1.0f, -1.0f), blue, XMFLOAT2(1, 1) }, //FBR - 1
+		{ XMFLOAT3(-1.0f, -1.0f, -1.0f), green, XMFLOAT2(0, 1) }, //FBL - 2
+		{ XMFLOAT3(-1.0f, +1.0f, -1.0f), red, XMFLOAT2(0, 0) }, //FTL - 3
 
-		{ XMFLOAT3(+1.0f, +1.0f, +1.0f), yellow }, //BTR - 4
-		{ XMFLOAT3(+1.0f, -1.0f, +1.0f), blue }, //BBR - 5
-		{ XMFLOAT3(-1.0f, -1.0f, +1.0f), green }, //BBL - 6
-		{ XMFLOAT3(-1.0f, +1.0f, +1.0f), red } //BTL - 7
+		{ XMFLOAT3(+1.0f, +1.0f, +1.0f), yellow, XMFLOAT2(0, 0) }, //BTR - 4
+		{ XMFLOAT3(+1.0f, -1.0f, +1.0f), blue, XMFLOAT2(0, 1) }, //BBR - 5
+		{ XMFLOAT3(-1.0f, -1.0f, +1.0f), green, XMFLOAT2(1, 1) }, //BBL - 6
+		{ XMFLOAT3(-1.0f, +1.0f, +1.0f), red, XMFLOAT2(1, 0) } //BTL - 7
 	};
 
 	Vertex hexagonVerts[] =
 	{
-		{ XMFLOAT3(+ 0.0f, + 0.0f, +0.0f), red }, //Center
+		{ XMFLOAT3(+ 0.0f, + 0.0f, +0.0f), red, XMFLOAT2(0, 0) }, //Center
 
-		{ XMFLOAT3(- 0.4f, + 0.6f, +0.0f), blue }, //TL
-		{ XMFLOAT3(+ 0.4f, + 0.6f, +0.0f), blue }, //TR
-		{ XMFLOAT3(+ 0.75f, + 0.0f, +0.0f), blue }, //MR
-		{ XMFLOAT3(+ 0.4f, - 0.6f, +0.0f), blue }, //BR
-		{ XMFLOAT3(- 0.4f, - 0.6f, +0.0f), blue }, //BL
-		{ XMFLOAT3(- 0.75f, + 0.0f, +0.0f), blue }, //ML
+		{ XMFLOAT3(- 0.4f, + 0.6f, +0.0f), blue, XMFLOAT2(1, 0) }, //TL
+		{ XMFLOAT3(+ 0.4f, + 0.6f, +0.0f), blue, XMFLOAT2(1, 0) }, //TR
+		{ XMFLOAT3(+ 0.75f, + 0.0f, +0.0f), blue, XMFLOAT2(1, 1) }, //MR
+		{ XMFLOAT3(+ 0.4f, - 0.6f, +0.0f), blue, XMFLOAT2(0, 1) }, //BR
+		{ XMFLOAT3(- 0.4f, - 0.6f, +0.0f), blue, XMFLOAT2(0, 1) }, //BL
+		{ XMFLOAT3(- 0.75f, + 0.0f, +0.0f), blue, XMFLOAT2(1, 1) }, //ML
 	};
 
 	// Set up the indices, which tell us which vertices to use and in which order
