@@ -6,6 +6,7 @@
 #include "Mesh.h"
 #include "Entity.h"
 #include "Camera.h"
+#include "Lights.h"
 
 class Game 
 	: public DXCore
@@ -30,24 +31,32 @@ public:
 private:
 
 	// Initialization helper methods - feel free to customize, combine, etc.
+	void CreateDefaultMaterial();
 	void LoadShaders(); 
 	void CreateBasicGeometry();
 
 	std::vector<Entity*> entities;
 
 	//Meshes
-	const int meshCount = 3;
+	const int meshCount = 9;
 	Mesh** meshes;
 
 	//Textures
-	ID3D11ShaderResourceView* textureSrv;
+	ID3D11ShaderResourceView* defaultSrv;
+	ID3D11ShaderResourceView* crateSrv;
 	ID3D11SamplerState* sampler;
 
 	// Wrappers for DirectX shaders to provide simplified functionality
 	SimpleVertexShader* vertexShader;
 	SimplePixelShader* pixelShader;
+
+	//Rendering Data
+	ID3D11Texture2D* defaultTexture;
 	Material* baseMaterial;
+	Material* crate;
+	Material* blue;
 	Camera* camera;
+	DirectionalLight* lights;
 
 	// Keeps track of the old mouse position.  Useful for 
 	// determining how far the mouse moved in a single frame.

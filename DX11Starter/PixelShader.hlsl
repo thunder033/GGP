@@ -1,7 +1,6 @@
 
 
-Texture2D Texture : register(t0);
-SamplerState Sampler : register(s0);
+
 
 // Struct representing the data we expect to receive from earlier pipeline stages
 // - Should match the output of our corresponding vertex shader
@@ -16,9 +15,29 @@ struct VertexToPixel
 	//  |    |                |
 	//  v    v                v
 	float4 position		: SV_POSITION;
-	float4 color		: COLOR;
+	float3 normal		: NORMAL;
 	float2 uv			: TEXCOORD;
 };
+
+struct DirectionalLight
+{
+	float4 ambientColor;
+	float4 diffuseColor;
+	float3 direction;
+};
+
+Texture2D Texture : register(t0);
+SamplerState Sampler : register(s0);
+DirectionalLight light : register(b0);
+DirectionalLight light2 : register(b1);
+float4 Color: register(b2);
+
+float4 getLightColor(DirectionalLight light, float3 normal) {
+	float3 lightDir = normalize(-light.direction);
+	float lightAmount = saturate(dot(lightDir, normal));
+
+	return lightAmount * light.diffuseColor;
+}
 
 // --------------------------------------------------------
 // The entry point (main method) for our pixel shader
@@ -31,15 +50,12 @@ struct VertexToPixel
 // --------------------------------------------------------
 float4 main(VertexToPixel input) : SV_TARGET
 {
-	//Test UV
-	//return float4(input.uv, 0, 1);
 
-	//Sample the texure
-	float4 textureColor = Texture.Sample(Sampler, input.uv);
+	//Sample the texure and use material color
+	float4 textureColor = Texture.Sample(Sampler, input.uv) * Color;
 
-	// Just return the input color
-	// - This color (like most values passing through the rasterizer) is 
-	//   interpolated for each pixel between the corresponding vertices 
-	//   of the triangle we're rendering
-	return input.color * textureColor;
+	return (getLightColor(light, input.normal) * textureColor) 
+		+ (getLightColor(light2, input.normal) * textureColor)
+		+ (light.ambientColor * textureColor)
+		+ (light2.ambientColor * textureColor);
 }

@@ -10,8 +10,12 @@ class Material
 	SimpleVertexShader* vertexShader;
 	SimplePixelShader* pixelShader;
 
+	ID3D11ShaderResourceView* textureSrv;
+	DirectX::XMFLOAT4 color;
+
 public:
-	Material(SimpleVertexShader* vertexShader, SimplePixelShader* pixelShader);
+	Material(SimpleVertexShader* vertexShader, SimplePixelShader* pixelShader, ID3D11ShaderResourceView* srv);
+	Material(SimpleVertexShader* vertexShader, SimplePixelShader* pixelShader, DirectX::XMFLOAT4 color, ID3D11ShaderResourceView* srv);
 	virtual ~Material();
 
 	SimpleVertexShader* GetVertexShader() {
@@ -20,6 +24,14 @@ public:
 
 	SimplePixelShader* GetPixelShader() {
 		return pixelShader;
+	}
+
+	ID3D11ShaderResourceView* GetTexture() {
+		return textureSrv;
+	}
+
+	DirectX::XMFLOAT4 GetColor() {
+		return color;
 	}
 };
 

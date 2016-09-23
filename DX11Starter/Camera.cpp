@@ -7,7 +7,7 @@ using namespace DirectX;
 Camera::Camera(float aspectRatio)
 {
 	transform = new Transform();
-	transform->SetPosition(0, 0, -5);
+	transform->SetPosition(0, 0, -8);
 	transform->SetRotation(0, 0, 1);
 	this->aspectRatio = aspectRatio;
 	UpdateViewMatrix();

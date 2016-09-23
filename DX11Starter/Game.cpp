@@ -41,17 +41,6 @@ Game::Game(HINSTANCE hInstance)
 // --------------------------------------------------------
 Game::~Game()
 {
-
-	// Delete our simple shader objects, which
-	// will clean up their own internal DirectX stuff
-	delete vertexShader;
-	delete pixelShader;
-	delete baseMaterial;
-	delete camera;
-
-	sampler->Release();
-	textureSrv->Release();
-
 	std::vector<Entity*>::iterator it;
 	for (it = entities.begin(); it < entities.end(); it++) {
 		delete *it;
@@ -65,6 +54,22 @@ Game::~Game()
 		}
 		delete meshes;
 	}
+
+	// Delete our simple shader objects, which
+	// will clean up their own internal DirectX stuff
+	delete baseMaterial;
+	delete crate;
+	delete blue;
+	delete lights;
+
+	delete vertexShader;
+	delete pixelShader;
+	delete camera;
+
+	sampler->Release();
+	defaultSrv->Release();
+	crateSrv->Release();
+	defaultTexture->Release();
 }
 
 // --------------------------------------------------------
@@ -78,15 +83,20 @@ void Game::Init()
 	//  - You'll be expanding and/or replacing these later
 	LoadShaders();
 	camera->SetAspectRatio((float)width / height);
-	CreateBasicGeometry();
+	CreateDefaultMaterial();
 
-	//Texturing
+	//Wood Texture
 	CreateWICTextureFromFile(
 		device, 
 		context, //Providing the context will auto-generate mipmaps
-		L"Debug/Textures/crate.png", 
+		L"Debug/Assets/Textures/crate.png", 
 		0, //we don't actually need the texture reference
-		&textureSrv);
+		&crateSrv);
+
+	crate = new Material(vertexShader, pixelShader, crateSrv);
+	blue = new Material(vertexShader, pixelShader, XMFLOAT4(0.15f, 0.15f, 1, 1), defaultSrv);
+
+	CreateBasicGeometry();
 
 	//Create a sampler state for texture sampling
 	D3D11_SAMPLER_DESC samplerDesc = {};
@@ -133,51 +143,79 @@ void Game::LoadShaders()
 	// scenarios work correctly, although others exist
 }
 
+void Game::CreateDefaultMaterial()
+{
+	unsigned char textureColor[] = { 255, 255, 255, 255 };
+
+	//Create the default texture description
+	D3D11_TEXTURE2D_DESC defaultTextureDesc;
+	ZeroMemory(&defaultTextureDesc, sizeof(D3D11_TEXTURE2D_DESC));
+	defaultTextureDesc.Width = 1;
+	defaultTextureDesc.Height = 1;
+	defaultTextureDesc.MipLevels = 1;
+	defaultTextureDesc.ArraySize = 1;
+	defaultTextureDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	defaultTextureDesc.SampleDesc.Count = 1;
+	defaultTextureDesc.SampleDesc.Quality = 0;
+	defaultTextureDesc.Usage = D3D11_USAGE_DEFAULT;
+	defaultTextureDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+	defaultTextureDesc.CPUAccessFlags = 0;
+	defaultTextureDesc.MiscFlags = 0;
+
+	//Set the initial data of a white color
+	D3D11_SUBRESOURCE_DATA defaultTextureInitData;
+	ZeroMemory(&defaultTextureInitData, sizeof(D3D11_SUBRESOURCE_DATA));
+	defaultTextureInitData.pSysMem = textureColor;
+	defaultTextureInitData.SysMemPitch = sizeof(unsigned char) * 4;
+
+	//Create the Texture and SRV
+	defaultTexture = nullptr;
+	device->CreateTexture2D(&defaultTextureDesc, &defaultTextureInitData, &defaultTexture);
+	device->CreateShaderResourceView(defaultTexture, NULL, &defaultSrv);
+
+	baseMaterial = new Material(vertexShader, pixelShader, defaultSrv);
+}
+
 // --------------------------------------------------------
 // Creates the geometry we're going to draw - a single triangle for now
 // --------------------------------------------------------
 void Game::CreateBasicGeometry()
 {
-	// Create some temporary variables to represent colors
-	// - Not necessary, just makes things more readable
-	XMFLOAT4 red	= XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f);
-	XMFLOAT4 green	= XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f);
-	XMFLOAT4 blue	= XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f);
-	XMFLOAT4 yellow = XMFLOAT4(1.0f, 1.0f, 0.0f, 1.0f);
+	XMFLOAT3 defaultNormal = XMFLOAT3(0.0f, 0.0f, -1.0f);
 
 	// Set up the vertices of the triangle we would like to draw
 	// - We're going to copy this array, exactly as it exists in memory
 	//    over to a DirectX-controlled data structure (the vertex buffer)
 	Vertex triangleVerts[] = 
 	{
-		{ XMFLOAT3(+0.0f, +1.0f, +0.0f), red, XMFLOAT2(0, 0) },
-		{ XMFLOAT3(+1.5f, -1.0f, +0.0f), blue, XMFLOAT2(1, 1) },
-		{ XMFLOAT3(-1.5f, -1.0f, +0.0f), green, XMFLOAT2(0, 1) },
+		{ XMFLOAT3(+0.0f, +1.0f, +0.0f), defaultNormal, XMFLOAT2(0, 0) },
+		{ XMFLOAT3(+1.5f, -1.0f, +0.0f), defaultNormal, XMFLOAT2(1, 1) },
+		{ XMFLOAT3(-1.5f, -1.0f, +0.0f), defaultNormal, XMFLOAT2(0, 1) },
 	};
 
 	Vertex cubeVerts[] =
 	{
-		{ XMFLOAT3(+1.0f, +1.0f, -1.0f), yellow, XMFLOAT2(1, 0) }, //FTR - 0
-		{ XMFLOAT3(+1.0f, -1.0f, -1.0f), blue, XMFLOAT2(1, 1) }, //FBR - 1
-		{ XMFLOAT3(-1.0f, -1.0f, -1.0f), green, XMFLOAT2(0, 1) }, //FBL - 2
-		{ XMFLOAT3(-1.0f, +1.0f, -1.0f), red, XMFLOAT2(0, 0) }, //FTL - 3
+		{ XMFLOAT3(+1.0f, +1.0f, -1.0f), defaultNormal, XMFLOAT2(1, 0) }, //FTR - 0
+		{ XMFLOAT3(+1.0f, -1.0f, -1.0f), defaultNormal, XMFLOAT2(1, 1) }, //FBR - 1
+		{ XMFLOAT3(-1.0f, -1.0f, -1.0f), defaultNormal, XMFLOAT2(0, 1) }, //FBL - 2
+		{ XMFLOAT3(-1.0f, +1.0f, -1.0f), defaultNormal, XMFLOAT2(0, 0) }, //FTL - 3
 
-		{ XMFLOAT3(+1.0f, +1.0f, +1.0f), yellow, XMFLOAT2(0, 0) }, //BTR - 4
-		{ XMFLOAT3(+1.0f, -1.0f, +1.0f), blue, XMFLOAT2(0, 1) }, //BBR - 5
-		{ XMFLOAT3(-1.0f, -1.0f, +1.0f), green, XMFLOAT2(1, 1) }, //BBL - 6
-		{ XMFLOAT3(-1.0f, +1.0f, +1.0f), red, XMFLOAT2(1, 0) } //BTL - 7
+		{ XMFLOAT3(+1.0f, +1.0f, +1.0f), defaultNormal, XMFLOAT2(0, 0) }, //BTR - 4
+		{ XMFLOAT3(+1.0f, -1.0f, +1.0f), defaultNormal, XMFLOAT2(0, 1) }, //BBR - 5
+		{ XMFLOAT3(-1.0f, -1.0f, +1.0f), defaultNormal, XMFLOAT2(1, 1) }, //BBL - 6
+		{ XMFLOAT3(-1.0f, +1.0f, +1.0f), defaultNormal, XMFLOAT2(1, 0) }  //BTL - 7
 	};
 
 	Vertex hexagonVerts[] =
 	{
-		{ XMFLOAT3(+ 0.0f, + 0.0f, +0.0f), red, XMFLOAT2(0, 0) }, //Center
+		{ XMFLOAT3(+ 0.0f, + 0.0f, +0.0f), defaultNormal, XMFLOAT2(0, 0) }, //Center
 
-		{ XMFLOAT3(- 0.4f, + 0.6f, +0.0f), blue, XMFLOAT2(1, 0) }, //TL
-		{ XMFLOAT3(+ 0.4f, + 0.6f, +0.0f), blue, XMFLOAT2(1, 0) }, //TR
-		{ XMFLOAT3(+ 0.75f, + 0.0f, +0.0f), blue, XMFLOAT2(1, 1) }, //MR
-		{ XMFLOAT3(+ 0.4f, - 0.6f, +0.0f), blue, XMFLOAT2(0, 1) }, //BR
-		{ XMFLOAT3(- 0.4f, - 0.6f, +0.0f), blue, XMFLOAT2(0, 1) }, //BL
-		{ XMFLOAT3(- 0.75f, + 0.0f, +0.0f), blue, XMFLOAT2(1, 1) }, //ML
+		{ XMFLOAT3(- 0.4f, + 0.6f, +0.0f), defaultNormal, XMFLOAT2(1, 0) }, //TL
+		{ XMFLOAT3(+ 0.4f, + 0.6f, +0.0f), defaultNormal, XMFLOAT2(1, 0) }, //TR
+		{ XMFLOAT3(+ 0.75f, + 0.0f, +0.0f), defaultNormal, XMFLOAT2(1, 1) }, //MR
+		{ XMFLOAT3(+ 0.4f, - 0.6f, +0.0f), defaultNormal, XMFLOAT2(0, 1) }, //BR
+		{ XMFLOAT3(- 0.4f, - 0.6f, +0.0f), defaultNormal, XMFLOAT2(0, 1) }, //BL
+		{ XMFLOAT3(- 0.75f, + 0.0f, +0.0f), defaultNormal, XMFLOAT2(1, 1) }, //ML
 	};
 
 	// Set up the indices, which tell us which vertices to use and in which order
@@ -185,8 +223,8 @@ void Game::CreateBasicGeometry()
 	// - Indices are technically not required if the vertices are in the buffer 
 	//    in the correct order and each one will be used exactly once
 	// - But just to see how it's done...
-	int triangleIndices[] = { 0, 1, 2 };
-	int cubeIndices[] = { 
+	UINT triangleIndices[] = { 0, 1, 2 };
+	UINT cubeIndices[] = {
 		0, 1, 2, 2, 3, 0, //Front
 		7, 6, 5, 5, 4, 7, //Back
 		5, 1, 0, 4, 5, 0, //Right
@@ -194,22 +232,45 @@ void Game::CreateBasicGeometry()
 		4, 0, 3, 7, 4, 3, //Top
 		2, 1, 5, 2, 5, 6, //Bottom
 	};
-	int hexagonIndices[] = { 0, 1, 2, 0, 2, 3, 0, 3, 4, 0, 4, 5, 0, 5, 6, 0, 6, 1};
+	UINT hexagonIndices[] = { 0, 1, 2, 0, 2, 3, 0, 3, 4, 0, 4, 5, 0, 5, 6, 0, 6, 1};
 
-	meshes = new Mesh*[3]{
+	meshes = new Mesh*[meshCount]{
 		new Mesh(triangleIndices, triangleVerts, 3, 3, device),
 		new Mesh(cubeIndices, cubeVerts, 36, 8, device),
-		new Mesh(hexagonIndices, hexagonVerts, 18, 7, device)
+		new Mesh(hexagonIndices, hexagonVerts, 18, 7, device),
+		new Mesh("Debug/Assets/Models/cone.obj", device),
+		new Mesh("Debug/Assets/Models/cube.obj", device),
+		new Mesh("Debug/Assets/Models/cylinder.obj", device),
+		new Mesh("Debug/Assets/Models/helix.obj", device),
+		new Mesh("Debug/Assets/Models/sphere.obj", device),
+		new Mesh("Debug/Assets/Models/torus.obj", device),
 	};
 
-	Material* baseMaterial = new Material(vertexShader, pixelShader);
+	DirectionalLight light = {};
+	light.AmbientColor = DirectX::XMFLOAT4(0.1f, 0.1f, 0.1f, 1.0f);
+	light.DiffuseColor = DirectX::XMFLOAT4(1.0f, 1.0f, 0.75f, 1.0f);
+	light.Direction = DirectX::XMFLOAT3(1, -1, 0);
+
+	DirectionalLight light2 = {};
+	light2.AmbientColor = DirectX::XMFLOAT4(0, 0, 0, 1.0f);
+	light2.DiffuseColor = DirectX::XMFLOAT4(1.0f, 0, 0, 1.0f);
+	light2.Direction = DirectX::XMFLOAT3(-1, 1, 0);
+
+	lights = new DirectionalLight[2] { light, light2 };
+
 	entities.push_back(new Entity(meshes[0], baseMaterial));
 	entities.push_back(new Entity(meshes[1], baseMaterial)); //cube
 	entities.push_back(new Entity(meshes[2], baseMaterial));
-	entities.push_back(new Entity(meshes[2], baseMaterial));
-	entities.push_back(new Entity(meshes[2], baseMaterial));
+	entities.push_back(new Entity(meshes[3], baseMaterial));
+	entities.push_back(new Entity(meshes[4], crate));
+	entities.push_back(new Entity(meshes[5], baseMaterial));
+	entities.push_back(new Entity(meshes[6], blue));
+	entities.push_back(new Entity(meshes[7], baseMaterial));
+	entities.push_back(new Entity(meshes[8], blue));
 
 	entities[0]->GetTransform()->SetPosition(1.5f, 0, 0);
+
+
 }
 
 
@@ -240,13 +301,26 @@ void Game::Update(float deltaTime, float totalTime)
 	entities[0]->GetTransform()->SetPosition(sin(totalTime), 0, 0);
 	entities[0]->GetTransform()->SetScale(abs(sin(totalTime)), 1, 1);
 
-	entities[1]->GetTransform()->SetPosition(0, 0, 0);
-	entities[1]->GetTransform()->SetPosition(0, sin(totalTime), 0);
-	entities[1]->GetTransform()->SetRotation(sin(totalTime) * 3.14f, sin(totalTime) * 3.14f, sin(totalTime) * 3.14f);
+	entities[1]->GetTransform()->SetPosition(0, cos(totalTime), sin(totalTime));
 	entities[2]->GetTransform()->SetPosition(0, 0, sin(totalTime));
 
+	//Make the cone orbit
 	entities[3]->GetTransform()->SetPosition(cos(totalTime), sin(totalTime), 0);
-	entities[4]->GetTransform()->SetPosition(0, cos(totalTime), sin(totalTime));
+	entities[3]->GetTransform()->SetRotation(0, 0, totalTime);
+
+	//Spinning Cube
+	entities[4]->GetTransform()->SetPosition(0, sin(totalTime), -2);
+	entities[4]->GetTransform()->SetRotation(sin(totalTime) * 3.14f, sin(totalTime) * 3.14f, sin(totalTime) * 3.14f);
+
+	//Move stuff out of the way
+	entities[5]->GetTransform()->SetPosition(-2, 0, 0);
+	entities[6]->GetTransform()->SetPosition(-4, 0, 0);
+	entities[7]->GetTransform()->SetPosition(4, 0, 0); //sphere
+
+	//Make the Torus spin
+	entities[8]->GetTransform()->SetPosition(4, 0, 0);
+	entities[8]->GetTransform()->SetRotation(totalTime * 3, 0, totalTime * 3);
+	entities[8]->GetTransform()->SetScale(2, 2, 2);
 }
 
 // --------------------------------------------------------
@@ -270,7 +344,9 @@ void Game::Draw(float deltaTime, float totalTime)
 	std::vector<Entity*>::iterator it;
 	for (it = entities.begin(); it < entities.end(); it++) {
 
-		(*it)->PrepareMaterial(camera->getViewMatrix(), camera->getProjectionMatrix(), textureSrv, sampler);
+		baseMaterial->GetPixelShader()->SetData("light", &lights[0], sizeof(DirectionalLight));
+		baseMaterial->GetPixelShader()->SetData("light2", &lights[1], sizeof(DirectionalLight));
+		(*it)->PrepareMaterial(camera->getViewMatrix(), camera->getProjectionMatrix(), sampler);
 
 		// Set buffers in the input assembler
 		//  - Do this ONCE PER OBJECT you're drawing, since each object might

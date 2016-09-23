@@ -36,7 +36,7 @@ DirectX::XMFLOAT4X4 Entity::GetDrawMatrix()
 	return matrix;
 }
 
-void Entity::PrepareMaterial(DirectX::XMFLOAT4X4 viewMatrix, DirectX::XMFLOAT4X4 projectionMatrix, ID3D11ShaderResourceView* textureSrv, ID3D11SamplerState* sampler)
+void Entity::PrepareMaterial(DirectX::XMFLOAT4X4 viewMatrix, DirectX::XMFLOAT4X4 projectionMatrix, ID3D11SamplerState* sampler)
 {
 	// Send data to shader variables
 	//  - Do this ONCE PER OBJECT you're drawing
@@ -47,9 +47,10 @@ void Entity::PrepareMaterial(DirectX::XMFLOAT4X4 viewMatrix, DirectX::XMFLOAT4X4
 	material->GetVertexShader()->SetMatrix4x4("view", viewMatrix);
 	material->GetVertexShader()->SetMatrix4x4("projection", projectionMatrix);
 
+	material->GetPixelShader()->SetData("Color", &material->GetColor(), sizeof(DirectX::XMFLOAT4));
 
 	material->GetPixelShader()->SetSamplerState("Sampler", sampler);
-	material->GetPixelShader()->SetShaderResourceView("Texture", textureSrv);
+	material->GetPixelShader()->SetShaderResourceView("Texture", material->GetTexture());
 
 	// Once you've set all of the data you care to change for
 	// the next draw call, you need to actually send it to the GPU

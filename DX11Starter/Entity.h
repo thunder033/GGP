@@ -17,7 +17,7 @@ public:
 
 	Mesh* GetMesh();
 	Transform* GetTransform();
-	void PrepareMaterial(DirectX::XMFLOAT4X4 viewMatrix, DirectX::XMFLOAT4X4 projectionMatrix, ID3D11ShaderResourceView* textureSrv, ID3D11SamplerState* sampler);
+	void PrepareMaterial(DirectX::XMFLOAT4X4 viewMatrix, DirectX::XMFLOAT4X4 projectionMatrix, ID3D11SamplerState* sampler);
 
 	DirectX::XMFLOAT4X4 GetDrawMatrix();
 };
