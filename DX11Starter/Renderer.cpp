@@ -92,3 +92,7 @@ Renderer::Renderer(ID3D11Device* device, ID3D11DeviceContext* context)
 Renderer::~Renderer()
 {
 }
+
+void Renderer::Render(Entity * entity, Camera * camera)
+{
+}
