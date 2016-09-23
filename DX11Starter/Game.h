@@ -7,6 +7,7 @@
 #include "Entity.h"
 #include "Camera.h"
 #include "Lights.h"
+#include "Renderer.h"
 
 class Game 
 	: public DXCore
@@ -31,11 +32,10 @@ public:
 private:
 
 	// Initialization helper methods - feel free to customize, combine, etc.
-	void CreateDefaultMaterial();
-	void LoadShaders(); 
 	void CreateBasicGeometry();
 
 	std::vector<Entity*> entities;
+	Renderer* renderer;
 
 	//Meshes
 	const int meshCount = 9;

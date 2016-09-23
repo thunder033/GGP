@@ -3,6 +3,7 @@
 #include "DXCore.h"
 #include "SimpleShader.h"
 #include <DirectXMath.h>
+#include "Renderer.h"
 
 class Material
 {
@@ -16,6 +17,7 @@ class Material
 public:
 	Material(SimpleVertexShader* vertexShader, SimplePixelShader* pixelShader, ID3D11ShaderResourceView* srv);
 	Material(SimpleVertexShader* vertexShader, SimplePixelShader* pixelShader, DirectX::XMFLOAT4 color, ID3D11ShaderResourceView* srv);
+
 	virtual ~Material();
 
 	SimpleVertexShader* GetVertexShader() {
